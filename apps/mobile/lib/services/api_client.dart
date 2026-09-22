@@ -1,15 +1,19 @@
 // ─────────────────────────────────────────────────────────────
 // The ONLY place in this app that knows the API exists.
 //
-// Every screen goes through here. That means the token handling,
-// the base URL and the error translation are each written once.
-// Compare apps/api/src/lib/prisma.ts — same idea, one door to
-// the outside world.
+// Every screen goes through here, so the base URL, the token and
+// the error translation are each written exactly once. Compare
+// apps/api/src/lib/prisma.ts — same idea: one door to the
+// outside world, so the awkward details live in one file.
+//
+// We use Dio rather than the plain `http` package because of
+// INTERCEPTORS (see below): they let us attach the token to every
+// request automatically, instead of remembering to do it in each
+// method.
 // ─────────────────────────────────────────────────────────────
-import 'dart:convert';
 import 'dart:io';
 
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_exception.dart';
@@ -32,8 +36,55 @@ class ApiClient {
 
   static const _tokenKey = 'auth_token';
 
-  /// The login token, kept on the device so you stay logged in
-  /// after closing the app.
+  /// The single Dio instance the whole app shares.
+  ///
+  /// `late final` means "build it the first time someone asks, then
+  /// keep it". One instance reuses its network connections, which is
+  /// faster than making a new one per request.
+  static late final Dio _dio = _build();
+
+  static Dio _build() {
+    final dio = Dio(
+      BaseOptions(
+        baseUrl: baseUrl,
+        // Give up rather than hang forever on a dead server.
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+        contentType: 'application/json',
+        // Accept every status code and decide for ourselves in
+        // _toException below. Otherwise Dio throws before we can
+        // read the API's { error, message } body.
+        validateStatus: (_) => true,
+      ),
+    );
+
+    // ── Interceptor: attach the token to every request ──
+    //
+    // This runs before each request leaves the app. It's why no
+    // method below mentions the Authorization header: the token is
+    // added in ONE place, so a new request can't forget it. That's
+    // the same "enforce it once" idea as authGuard on the API.
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          final token = await readToken();
+
+          if (token != null) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
+
+          return handler.next(options);
+        },
+      ),
+    );
+
+    return dio;
+  }
+
+  // ── The token ──
+  //
+  // Kept on the device so you stay logged in after closing the app.
+
   static Future<String?> readToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_tokenKey);
@@ -49,65 +100,76 @@ class ApiClient {
     await prefs.remove(_tokenKey);
   }
 
-  /// Builds the headers, adding `Authorization: Bearer <token>`
-  /// when we have one — exactly what authGuard on the API expects.
-  static Future<Map<String, String>> _headers() async {
-    final token = await readToken();
-
-    return {
-      'Content-Type': 'application/json',
-      if (token != null) 'Authorization': 'Bearer $token',
-    };
-  }
+  // ── The requests ──
 
   static Future<dynamic> get(String path) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl$path'),
-      headers: await _headers(),
-    );
-
-    return _handle(response);
+    return _send(() => _dio.get<dynamic>(path));
   }
 
   static Future<dynamic> post(String path, Map<String, dynamic> body) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl$path'),
-      headers: await _headers(),
-      body: jsonEncode(body),
-    );
-
-    return _handle(response);
+    return _send(() => _dio.post<dynamic>(path, data: body));
   }
 
   static Future<dynamic> patch(String path, Map<String, dynamic> body) async {
-    final response = await http.patch(
-      Uri.parse('$baseUrl$path'),
-      headers: await _headers(),
-      body: jsonEncode(body),
-    );
-
-    return _handle(response);
+    return _send(() => _dio.patch<dynamic>(path, data: body));
   }
 
-  /// Turns an HTTP response into data, or throws ApiException.
+  static Future<dynamic> delete(String path) async {
+    return _send(() => _dio.delete<dynamic>(path));
+  }
+
+  /// Runs a request and converts any failure into an ApiException.
+  ///
+  /// Taking the request as a function means the try/catch is written
+  /// once here rather than in all four methods above.
+  static Future<dynamic> _send(Future<Response<dynamic>> Function() run) async {
+    try {
+      final response = await run();
+      return _unwrap(response);
+    } on DioException catch (e) {
+      // The request never completed: no server, no network, timeout.
+      throw ApiException(0, _describeNetworkProblem(e));
+    }
+  }
+
+  /// Turns a response into data, or throws ApiException.
   ///
   /// This is the mirror image of the `onError` handler in
-  /// apps/api/src/app.ts: there, errors become JSON + a status
-  /// code; here, that pair becomes a Dart exception again.
-  static dynamic _handle(http.Response response) {
-    final isJson = response.body.isNotEmpty;
-    final decoded = isJson ? jsonDecode(response.body) : null;
+  /// apps/api/src/app.ts: there, a thrown error becomes JSON plus a
+  /// status code; here, that pair becomes a Dart exception again.
+  static dynamic _unwrap(Response<dynamic> response) {
+    final status = response.statusCode ?? 0;
 
     // 2xx means it worked.
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return decoded;
+    if (status >= 200 && status < 300) {
+      return response.data;
     }
 
     // Otherwise read the API's error shape: { error, message }
-    final message = decoded is Map && decoded['message'] is String
-        ? decoded['message'] as String
-        : 'Request failed (${response.statusCode})';
+    final data = response.data;
+    final message = data is Map && data['message'] is String
+        ? data['message'] as String
+        : 'Request failed ($status)';
 
-    throw ApiException(response.statusCode, message);
+    throw ApiException(status, message);
+  }
+
+  /// A readable message for the cases where there's no reply at all.
+  ///
+  /// Worth distinguishing: "the server is slow" needs a retry, while
+  /// "nothing is listening" means the API isn't running.
+  static String _describeNetworkProblem(DioException e) {
+    switch (e.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.receiveTimeout:
+      case DioExceptionType.sendTimeout:
+        return 'The API took too long to answer. Is it still running?';
+      case DioExceptionType.connectionError:
+        return 'Could not reach the API at $baseUrl.\n\n'
+            'Is it running? On an Android emulator the address must be '
+            '10.0.2.2, not localhost.';
+      default:
+        return 'Network problem: ${e.message ?? e.type.name}';
+    }
   }
 }
