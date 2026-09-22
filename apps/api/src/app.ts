@@ -64,6 +64,16 @@ export const app = new Elysia()
       });
     }
 
+    // The body wasn't valid JSON at all (a stray comma, a missing
+    // quote). That's the client's mistake, so it's a 400 — not the
+    // 500 you'd get if this branch were missing.
+    if (code === "PARSE") {
+      return status(400, {
+        error: "BadRequest",
+        message: "Could not parse the request body as JSON",
+      });
+    }
+
     // Anything else is a bug in our code. Log the real error for
     // the developer, but never leak internals to the client.
     console.error("[unhandled]", error);

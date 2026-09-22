@@ -15,7 +15,7 @@ Expected problems get a clear, specific message. Unexpected ones get a generic m
 |---|---|---|
 | 200 | OK | it worked |
 | 201 | Created | it worked and made something new |
-| 400 | Bad Request | malformed request |
+| 400 | Bad Request | malformed request (e.g. the body isn't valid JSON) |
 | 401 | Unauthorized | not logged in |
 | 403 | Forbidden | logged in, not allowed |
 | 404 | Not Found | doesn't exist |
@@ -91,6 +91,10 @@ The second can't be got wrong. Forget the null check in the first and you get a 
     return status(404, { error: "NotFound", message: "That route does not exist" });
   }
 
+  if (code === "PARSE") {
+    return status(400, { error: "BadRequest", message: "Could not parse the request body as JSON" });
+  }
+
   console.error("[unhandled]", error);
   return status(500, { error: "InternalServerError", message: "Something went wrong on our side" });
 })
@@ -99,6 +103,21 @@ The second can't be got wrong. Forget the null check in the first and you get a 
 Read the order carefully — it goes from most specific to most general, and the final branch is the safety net.
 
 **This is why there is no `try/catch` in any route in this project.** Scattered try/catch blocks produce inconsistent error shapes; one handler means every error looks the same to the client.
+
+### Why the `PARSE` branch exists
+
+Elysia raises `PARSE` when the body isn't valid JSON — a trailing comma, a missing quote. Without that branch the error falls through to the bottom and the client gets a `500`, which says "the server is broken" when the truth is "your JSON has a typo".
+
+This project genuinely had that bug. A test now locks the behaviour in, in [tests/errors.test.ts](../apps/api/tests/errors.test.ts):
+
+```ts
+it("is a 400, not a 500 — the client sent it wrong", async () => {
+  const { status } = await rawPost("/api/auth/register", '{"name":"A",}');
+  expect(status).toBe(400);
+});
+```
+
+**The general lesson: any error code you don't handle explicitly becomes a `500`.** When you see an unexpected `500`, check whether the real error had a code your handler ignores.
 
 ### The `500` branch, in detail
 
