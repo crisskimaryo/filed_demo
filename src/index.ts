@@ -1,7 +1,11 @@
-import { Elysia } from "elysia";
+// ─────────────────────────────────────────────────────────────
+// Entry point. Its only job is to start listening.
+// The app itself is built in app.ts.
+// ─────────────────────────────────────────────────────────────
+import { app } from "./app";
+import { env } from "./lib/env";
 
-const app = new Elysia().get("/", () => "Hello Elysia").listen(3000);
+app.listen(env.PORT);
 
-console.log(
-  `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
-);
+console.log(`🦊 Zeni API running at http://localhost:${env.PORT}`);
+console.log(`📚 API docs at         http://localhost:${env.PORT}/swagger`);

@@ -1,0 +1,77 @@
+// ─────────────────────────────────────────────────────────────
+// Prisma schema — the single source of truth for your database.
+//
+// Workflow whenever you change this file:
+//   1. edit the models below
+//   2. bun run db:migrate   (writes the change to SQLite + regenerates types)
+//   3. your editor now autocompletes the new fields
+// ─────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+// Note: in Prisma 7 the connection URL lives in ../prisma.config.ts,
+// not here. This block only declares which kind of database we use.
+datasource db {
+  provider = "sqlite"
+}
+
+// A person who can log in.
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String // always a hash, never the plain text
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations: one User has one Profile and many Loans.
+  profile Profile?
+  loans   Loan[]
+}
+
+// Optional extra details about a user, kept in its own table
+// to show how a one-to-one relation works.
+model Profile {
+  id        String   @id @default(cuid())
+  bio       String?
+  phone     String?
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // @unique on userId is what makes this one-to-one instead of one-to-many.
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// The money a user borrowed.
+model Loan {
+  id        String     @id @default(cuid())
+  amount    Int // stored in cents to avoid floating-point money bugs
+  status    LoanStatus @default(PENDING)
+  purpose   String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // An index makes "find all loans for this user" fast.
+  @@index([userId])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum LoanStatus {
+  PENDING
+  ACTIVE
+  PAID
+  DEFAULTED
+}

@@ -40,3 +40,15 @@ yarn-error.log*
 **/*.log
 package-lock.json
 **/*.bun
+# env (real secrets — commit .env.example instead)
+.env
+
+# SQLite database files
+*.db
+*.db-journal
+prisma/dev.db
+prisma/test.db
+prisma/*.db
+
+# generated prisma client
+src/generated

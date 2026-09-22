@@ -1,0 +1,4 @@
+[test]
+# Runs tests/setup.ts before the test files, so tests use their own
+# database instead of your development one.
+preload = ["./tests/setup.ts"]
