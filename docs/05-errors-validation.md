@@ -27,7 +27,7 @@ Getting these right isn't pedantry. Clients *act* on them: a `401` should trigge
 
 ## Throwing, not returning
 
-[src/lib/errors.ts](../src/lib/errors.ts) defines one class per situation:
+[src/lib/errors.ts](../apps/api/src/lib/errors.ts) defines one class per situation:
 
 ```ts
 export class AppError extends Error {
@@ -71,7 +71,7 @@ The second can't be got wrong. Forget the null check in the first and you get a 
 
 ## One handler for everything
 
-[src/app.ts](../src/app.ts):
+[src/app.ts](../apps/api/src/app.ts):
 
 ```ts
 .onError(({ code, error, status }) => {
@@ -160,7 +160,7 @@ A distinction that trips people up:
 
 - `t.Optional(t.String())` — you may leave the field out.
 - `t.Nullable(t.String())` — the field may be `null`.
-- `t.Optional(t.Nullable(t.String()))` — either. [profiles.model.ts](../src/modules/profiles/profiles.model.ts) uses this so a client can *clear* a bio by sending `null`, which is different from not mentioning it.
+- `t.Optional(t.Nullable(t.String()))` — either. [profiles.model.ts](../apps/api/src/modules/profiles/profiles.model.ts) uses this so a client can *clear* a bio by sending `null`, which is different from not mentioning it.
 
 ### Where to validate
 
@@ -220,7 +220,7 @@ curl localhost:3300/api/nope
 All four are handled without a single line of checking code in any route.
 </details>
 
-Now break something on purpose. Add this to [src/modules/loans/loans.route.ts](../src/modules/loans/loans.route.ts):
+Now break something on purpose. Add this to [src/modules/loans/loans.route.ts](../apps/api/src/modules/loans/loans.route.ts):
 
 ```ts
 .get("/boom", () => {

@@ -20,7 +20,7 @@ Three pieces:
 
 ## Reading the schema
 
-Open [prisma/schema.prisma](../prisma/schema.prisma). Here's the `Loan` model:
+Open [prisma/schema.prisma](../apps/api/prisma/schema.prisma). Here's the `Loan` model:
 
 ```prisma
 model Loan {
@@ -136,7 +136,7 @@ prisma.loan.findMany({
 });
 ```
 
-Look at how [auth.service.ts](../src/modules/auth/auth.service.ts) handles this:
+Look at how [auth.service.ts](../apps/api/src/modules/auth/auth.service.ts) handles this:
 
 ```ts
 const publicUser = { id: true, name: true, email: true, role: true, createdAt: true } as const;
@@ -176,11 +176,11 @@ prisma.user.create({
 });
 ```
 
-[prisma/seed.ts](../prisma/seed.ts) uses this. It's also how registration creates the empty profile — so there's never a user without one.
+[prisma/seed.ts](../apps/api/prisma/seed.ts) uses this. It's also how registration creates the empty profile — so there's never a user without one.
 
 ### Running queries in parallel
 
-In [loans.service.ts](../src/modules/loans/loans.service.ts):
+In [loans.service.ts](../apps/api/src/modules/loans/loans.service.ts):
 
 ```ts
 const [items, total] = await Promise.all([

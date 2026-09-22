@@ -8,6 +8,9 @@
 import { password } from "../src/lib/password";
 import { prisma } from "../src/lib/prisma";
 
+// Reminder: `amount` is in CENTS (see prisma/schema.prisma), so
+// 500_000_00 is TSh 500,000. Writing it with the extra _00 makes the
+// shilling value easy to read at a glance.
 async function main() {
   console.log("🌱 Seeding...");
 
@@ -37,8 +40,8 @@ async function main() {
       // Nested create: make the user AND their loans in one go.
       loans: {
         create: [
-          { amount: 500_000, purpose: "School fees", status: "ACTIVE" },
-          { amount: 120_000, purpose: "Laptop", status: "PENDING" },
+          { amount: 500_000_00, purpose: "School fees", status: "ACTIVE" }, // TSh 500,000
+          { amount: 120_000_00, purpose: "Laptop", status: "PENDING" }, // TSh 120,000
         ],
       },
     },
@@ -51,7 +54,7 @@ async function main() {
       password: hashed,
       profile: { create: {} },
       loans: {
-        create: [{ amount: 75_000, purpose: "Books", status: "PAID" }],
+        create: [{ amount: 75_000_00, purpose: "Books", status: "PAID" }], // TSh 75,000
       },
     },
   });

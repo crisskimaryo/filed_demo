@@ -46,9 +46,25 @@ package-lock.json
 # SQLite database files
 *.db
 *.db-journal
-prisma/dev.db
-prisma/test.db
+**/prisma/dev.db
+**/prisma/test.db
 prisma/*.db
 
 # generated prisma client
-src/generated
+**/src/generated
+
+# Flutter / Dart
+**/.dart_tool/
+**/build/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/ephemeral/
+**/android/.gradle/
+**/android/local.properties
+**/android/key.properties
+*.iml
+.idea/

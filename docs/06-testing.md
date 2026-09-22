@@ -1,6 +1,9 @@
 # 6. Testing
 
+> **Where to run these commands:** every `bun` command in the backend docs runs from `apps/api/`. Do `cd apps/api` first.
+
 ```bash
+cd apps/api
 bun test
 ```
 
@@ -29,7 +32,7 @@ it("stops a normal user approving their own loan", async () => {
 
 ## Testing without a server
 
-The trick that makes these tests fast. From [tests/helpers.ts](../tests/helpers.ts):
+The trick that makes these tests fast. From [tests/helpers.ts](../apps/api/tests/helpers.ts):
 
 ```ts
 const response = await app.handle(
@@ -37,7 +40,7 @@ const response = await app.handle(
 );
 ```
 
-`app.handle()` takes a `Request` and returns a `Response` — the real routing, real guards, real validation, real database — but **no network, no port**. This is exactly why [src/app.ts](../src/app.ts) doesn't call `.listen()`; that's `index.ts`'s job. Twenty-six tests run in about two seconds.
+`app.handle()` takes a `Request` and returns a `Response` — the real routing, real guards, real validation, real database — but **no network, no port**. This is exactly why [src/app.ts](../apps/api/src/app.ts) doesn't call `.listen()`; that's `index.ts`'s job. Twenty-six tests run in about two seconds.
 
 ## The helpers
 
@@ -68,7 +71,7 @@ Emails are unique in the schema, so a fixed address would fail on the second tes
 
 ## Keeping tests out of your real data
 
-[tests/setup.ts](../tests/setup.ts) runs before any test, wired up by [bunfig.toml](../bunfig.toml):
+[tests/setup.ts](../apps/api/tests/setup.ts) runs before any test, wired up by [bunfig.toml](../apps/api/bunfig.toml):
 
 ```toml
 [test]
@@ -121,7 +124,7 @@ expect(x).toBeNull()         expect(arr.length).toBe(2)
 
 ## What's worth testing
 
-Look at [tests/loans.test.ts](../tests/loans.test.ts) — notice the balance. Few tests for the happy path, many for the rules:
+Look at [tests/loans.test.ts](../apps/api/tests/loans.test.ts) — notice the balance. Few tests for the happy path, many for the rules:
 
 **High value:**
 - permissions — Juma can't read Amina's loan
@@ -155,7 +158,7 @@ bun test --watch -t "ownership"  # only tests matching a name
 ## Do this now
 
 1. Run `bun test`. Confirm `26 pass`.
-2. Break something deliberately. In [loans.service.ts](../src/modules/loans/loans.service.ts), comment out the ownership check in `findById`:
+2. Break something deliberately. In [loans.service.ts](../apps/api/src/modules/loans/loans.service.ts), comment out the ownership check in `findById`:
    ```ts
    // if (loan.userId !== requester.id && requester.role !== "ADMIN") {
    //   throw new ForbiddenError("This loan belongs to someone else");

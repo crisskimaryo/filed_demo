@@ -19,7 +19,7 @@ Why it matters: databases get leaked. If yours holds plain passwords, every user
 
 ### How we do it
 
-[src/lib/password.ts](../src/lib/password.ts):
+[src/lib/password.ts](../apps/api/src/lib/password.ts):
 
 ```ts
 export const password = {
@@ -69,7 +69,7 @@ So: **never put anything secret in a JWT payload.** Ours holds only an id, an em
 
 ### Signing one
 
-From [auth.route.ts](../src/modules/auth/auth.route.ts):
+From [auth.route.ts](../apps/api/src/modules/auth/auth.route.ts):
 
 ```ts
 const token = await jwt.sign({
@@ -79,13 +79,13 @@ const token = await jwt.sign({
 });
 ```
 
-And the setup in [auth.middleware.ts](../src/lib/auth.middleware.ts) sets `exp: "7d"` — tokens stop working after seven days, which limits the damage if one is stolen.
+And the setup in [auth.middleware.ts](../apps/api/src/lib/auth.middleware.ts) sets `exp: "7d"` — tokens stop working after seven days, which limits the damage if one is stolen.
 
 > **A real trade-off to know about:** because the server doesn't store tokens, it can't easily *revoke* one. Change a user's role to `USER` and their existing ADMIN token keeps working until it expires. Production systems handle this with short-lived access tokens plus refresh tokens — that's exercise 11.
 
 ## The guard
 
-Rather than checking the token in every route, we check it once in a reusable guard. [auth.middleware.ts](../src/lib/auth.middleware.ts):
+Rather than checking the token in every route, we check it once in a reusable guard. [auth.middleware.ts](../apps/api/src/lib/auth.middleware.ts):
 
 ```ts
 export const authGuard = new Elysia({ name: "authGuard" })
@@ -132,7 +132,7 @@ Our rules:
 
 ### Ownership, enforced once
 
-From [loans.service.ts](../src/modules/loans/loans.service.ts):
+From [loans.service.ts](../apps/api/src/modules/loans/loans.service.ts):
 
 ```ts
 async findById(id: string, requester: Requester) {
@@ -199,7 +199,7 @@ Logging in again will never fix a `403`.
 
 Two subtle choices in this codebase.
 
-**Login gives one message for both failures.** From [auth.service.ts](../src/modules/auth/auth.service.ts):
+**Login gives one message for both failures.** From [auth.service.ts](../apps/api/src/modules/auth/auth.service.ts):
 
 ```ts
 if (!user || !(await pw.verify(data.password, user.password))) {

@@ -46,7 +46,7 @@ Because this is *data* rather than hand-written `if` statements, Elysia can use 
 
 ### `*.service.ts` — the logic
 
-Talks to the database. **Never mentions HTTP.** Look at [src/modules/loans/loans.service.ts](../src/modules/loans/loans.service.ts) — no status codes, no `request`, no `response`. When something is wrong it *throws*:
+Talks to the database. **Never mentions HTTP.** Look at [src/modules/loans/loans.service.ts](../apps/api/src/modules/loans/loans.service.ts) — no status codes, no `request`, no `response`. When something is wrong it *throws*:
 
 ```ts
 if (!loan) {
@@ -70,7 +70,7 @@ Maps a URL to a service call and stays thin:
 
 ## How a module gets wired in
 
-[src/app.ts](../src/app.ts) collects everything:
+[src/app.ts](../apps/api/src/app.ts) collects everything:
 
 ```ts
 .group("/api", (api) =>
@@ -86,7 +86,7 @@ And each route file declares its own prefix, so `loanRoute` has `prefix: "/loans
 
 ## Why `app.ts` and `index.ts` are separate
 
-[src/index.ts](../src/index.ts) is three lines: import the app, call `.listen()`.
+[src/index.ts](../apps/api/src/index.ts) is three lines: import the app, call `.listen()`.
 
 That separation exists for testing. `app.ts` exports a fully assembled app that hasn't claimed a network port. So a test can do:
 
@@ -94,7 +94,7 @@ That separation exists for testing. `app.ts` exports a fully assembled app that 
 const response = await app.handle(new Request("http://localhost/api/loans"));
 ```
 
-No server, no port, no cleanup — and fast. That's exactly what [tests/helpers.ts](../tests/helpers.ts) does. If the `.listen()` call lived in `app.ts`, every test run would try to occupy port 3300.
+No server, no port, no cleanup — and fast. That's exactly what [tests/helpers.ts](../apps/api/tests/helpers.ts) does. If the `.listen()` call lived in `app.ts`, every test run would try to occupy port 3300.
 
 ## What goes in `lib/`
 
@@ -102,11 +102,11 @@ No server, no port, no cleanup — and fast. That's exactly what [tests/helpers.
 
 | File | Why it's shared |
 |---|---|
-| [env.ts](../src/lib/env.ts) | every module reads settings |
-| [prisma.ts](../src/lib/prisma.ts) | there must be exactly **one** database connection |
-| [password.ts](../src/lib/password.ts) | auth hashes, and a future "reset password" will too |
-| [errors.ts](../src/lib/errors.ts) | every service throws these |
-| [auth.middleware.ts](../src/lib/auth.middleware.ts) | loans and profiles both need the login check |
+| [env.ts](../apps/api/src/lib/env.ts) | every module reads settings |
+| [prisma.ts](../apps/api/src/lib/prisma.ts) | there must be exactly **one** database connection |
+| [password.ts](../apps/api/src/lib/password.ts) | auth hashes, and a future "reset password" will too |
+| [errors.ts](../apps/api/src/lib/errors.ts) | every service throws these |
+| [auth.middleware.ts](../apps/api/src/lib/auth.middleware.ts) | loans and profiles both need the login check |
 
 That last one is the payoff. The ownership rule lives in **one** place, so a new route can't forget it.
 
@@ -132,7 +132,7 @@ Notice what's **missing**: no arrow from `service` back to `route`. The logic la
 
 ## Exercise
 
-Open [src/modules/profiles/](../src/modules/profiles/) and identify which file you'd edit for each change. Answers at the bottom.
+Open [src/modules/profiles/](../apps/api/src/modules/profiles/) and identify which file you'd edit for each change. Answers at the bottom.
 
 1. Allow a bio of 1000 characters instead of 500.
 2. Add a `city` field to profiles.

@@ -1,167 +1,153 @@
-# Zeni Loans API
+# Zeni Loans — a full-stack learning project
 
-A small loan-management backend, built to **learn backend development**.
+A loan-management system built to **learn backend development and how an app talks to it**.
 
-Built with **Bun** (runtime), **Elysia** (web framework), **Prisma 7** (database toolkit) and **SQLite** (the database — just a file, nothing to install).
+```
+zeni-bk/
+├─ apps/
+│  ├─ api/        Bun + Elysia + Prisma 7 + SQLite   (the backend)
+│  └─ mobile/     Flutter + Dart                     (the app)
+└─ docs/          the curriculum for both
+```
 
 ---
 
-## 1. Set it up (once)
+## Run it
+
+You need **two terminals**. The app does nothing without the API.
+
+**Terminal 1 — the API**
 
 ```bash
-bun install          # download the libraries
-cp .env.example .env # create your local settings file
-bun run db:migrate   # create the database file + tables
-bun run db:seed      # add sample users and loans
-```
-
-> **Windows note:** if `cp` is not recognised, use `copy .env.example .env`.
-
-## 2. Run it
-
-```bash
+cd apps/api
+bun install
+cp .env.example .env
+bun run db:migrate    # create the database file and tables
+bun run db:seed       # add sample users and loans
 bun run dev
 ```
 
-Then open **http://localhost:3300/swagger** — that's a clickable page listing every endpoint, where you can try requests without writing any code. Start there.
+Open **http://localhost:3300/swagger** to try the API without any app.
 
-## 3. Log in with the sample data
+**Terminal 2 — the app**
 
-All three seeded accounts use the password `password123`:
+```bash
+cd apps/mobile
+flutter pub get
+flutter run
+```
 
-| Email | Role | What they can see |
+Log in with `amina@zeni.test` / `password123` (prefilled).
+
+> The first Android build takes several minutes. After that, saving a file hot-reloads in about a second.
+
+### Sample accounts
+
+All use the password `password123`:
+
+| Email | Role | Sees |
 |---|---|---|
 | `admin@zeni.test` | ADMIN | every loan, and can approve them |
 | `amina@zeni.test` | USER | only her 2 loans |
 | `juma@zeni.test` | USER | only his 1 loan |
 
-## 4. Every command
-
-| Command | What it does |
-|---|---|
-| `bun run dev` | start the server, restarting on save |
-| `bun test` | run the tests (uses a separate database) |
-| `bun run typecheck` | check for type errors without running |
-| `bun run db:migrate` | apply schema changes to the database |
-| `bun run db:seed` | wipe and refill with sample data |
-| `bun run db:studio` | open a visual database browser |
-| `bun run db:reset` | delete everything and rebuild from scratch |
-
----
-
-## The endpoints
-
-🔒 = needs a token in the `Authorization` header.
-
-### Auth
-| Method | Path | Does |
-|---|---|---|
-| POST | `/api/auth/register` | create an account, returns a token |
-| POST | `/api/auth/login` | swap email+password for a token |
-| GET | `/api/auth/me` 🔒 | who am I? |
-
-### Loans
-| Method | Path | Does |
-|---|---|---|
-| GET | `/api/loans` 🔒 | list your loans (all of them if admin) |
-| GET | `/api/loans/:id` 🔒 | get one loan |
-| POST | `/api/loans` 🔒 | apply for a loan |
-| PATCH | `/api/loans/:id` 🔒 | edit a loan (only admins may change `status`) |
-| DELETE | `/api/loans/:id` 🔒 | delete a loan |
-
-### Profiles
-| Method | Path | Does |
-|---|---|---|
-| GET | `/api/profiles/me` 🔒 | your profile |
-| PATCH | `/api/profiles/me` 🔒 | update your profile |
-
-### Try it from the terminal
-
-```bash
-# log in and save the token to a variable
-TOKEN=$(curl -s -X POST localhost:3300/api/auth/login \
-  -H 'Content-Type: application/json' \
-  -d '{"email":"amina@zeni.test","password":"password123"}' \
-  | grep -o '"token":"[^"]*' | cut -d'"' -f4)
-
-# use it
-curl localhost:3300/api/loans -H "Authorization: Bearer $TOKEN"
-```
-
----
-
-## How the code is organised
-
-```
-src/
-├─ index.ts          ← starts the server (3 lines)
-├─ app.ts            ← assembles plugins, error handling, routes
-│
-├─ lib/                        the shared toolbox
-│  ├─ env.ts         ← reads .env, fails loudly if something's missing
-│  ├─ prisma.ts      ← the one database connection
-│  ├─ password.ts    ← hashing & checking passwords
-│  ├─ errors.ts      ← NotFoundError, ForbiddenError, ...
-│  └─ auth.middleware.ts ← the "are you logged in?" guard
-│
-└─ modules/                    one folder per feature
-   ├─ auth/
-   ├─ loans/
-   └─ profiles/
-```
-
-### Every module has the same three files
-
-This is the single most important pattern in the project:
-
-| File | Job | Rule of thumb |
-|---|---|---|
-| `*.model.ts` | **shape** — what a valid request looks like | no logic |
-| `*.service.ts` | **logic** — talks to the database | never mentions HTTP |
-| `*.route.ts` | **HTTP** — maps a URL to a service call | stays thin |
-
-Why split it up? Because each file then has one reason to change. When a rule about loans changes you edit the service; when a URL changes you edit the route. And because the service knows nothing about HTTP, you can call it from a test or a script — which is exactly what the tests in `tests/` do.
+Log in as amina, then as admin, and watch the same screen show different data. The app code doesn't change — **the backend decides.** That's the central idea of the whole project.
 
 ---
 
 ## 📚 Learning path
 
-Read these in order. They assume no backend experience.
+Start with the backend. The app half assumes you know what a token is.
+
+### Part 1 — the backend (`docs/`)
 
 | # | Document | You'll learn |
 |---|---|---|
-| 0 | **[docs/00-start-here.md](docs/00-start-here.md)** | how the web works, what a backend even is |
-| 1 | **[docs/01-architecture.md](docs/01-architecture.md)** | why the code is split into model/service/route |
-| 2 | **[docs/02-request-lifecycle.md](docs/02-request-lifecycle.md)** | trace one request end to end |
-| 3 | **[docs/03-database-prisma.md](docs/03-database-prisma.md)** | tables, relations, migrations, queries |
-| 4 | **[docs/04-authentication.md](docs/04-authentication.md)** | hashing, tokens, guards, permissions |
-| 5 | **[docs/05-errors-validation.md](docs/05-errors-validation.md)** | status codes and rejecting bad input |
-| 6 | **[docs/06-testing.md](docs/06-testing.md)** | writing tests that catch real bugs |
-| 7 | **[docs/07-exercises.md](docs/07-exercises.md)** | **12 exercises, easy → hard** |
-| 8 | **[docs/08-glossary.md](docs/08-glossary.md)** | every unfamiliar word, defined |
-| 9 | **[docs/09-troubleshooting.md](docs/09-troubleshooting.md)** | fixes for common errors |
+| 0 | [start here](docs/00-start-here.md) | how the web works, what a backend is |
+| 1 | [architecture](docs/01-architecture.md) | why the code is split into layers |
+| 2 | [request lifecycle](docs/02-request-lifecycle.md) | trace one request end to end |
+| 3 | [database & Prisma](docs/03-database-prisma.md) | tables, relations, migrations, queries |
+| 4 | [authentication](docs/04-authentication.md) | hashing, tokens, guards, permissions |
+| 5 | [errors & validation](docs/05-errors-validation.md) | status codes, rejecting bad input |
+| 6 | [testing](docs/06-testing.md) | tests that catch real bugs |
+| 7 | [**exercises**](docs/07-exercises.md) | 12 exercises, easy → hard |
+| 8 | [glossary](docs/08-glossary.md) | every unfamiliar word |
+| 9 | [troubleshooting](docs/09-troubleshooting.md) | fixes for common errors |
 
-**Suggested pace:** docs 0–2 on day one (read, run the server, click around Swagger). Doc 3 and the first exercises on day two. Don't rush to the exercises — being able to trace one request through the layers matters more than finishing quickly.
+### Part 2 — the app (`docs/mobile/`)
+
+| # | Document | You'll learn |
+|---|---|---|
+| 0 | [start here](docs/mobile/00-start-here.md) | Flutter basics, running both halves |
+| 1 | [**how they connect**](docs/mobile/01-connecting.md) | one tap traced through both codebases |
+| 2 | [exercises](docs/mobile/02-exercises.md) | 10 exercises, incl. full-stack ones |
+
+**Suggested pace:** backend docs 0–2 on day one. Doc 3 and the first exercises on day two. Come to the app only once you can trace a request through the API's layers — then mobile doc 1 will click instead of confuse.
 
 ---
 
-## Branches per level
+## Commands
 
-Each `level-*` branch is a working checkpoint. `main` has everything.
+**API** (`cd apps/api`)
+
+| Command | Does |
+|---|---|
+| `bun run dev` | start the server, restart on save |
+| `bun test` | run 26 tests (separate database) |
+| `bun run typecheck` | check types without running |
+| `bun run db:migrate` | apply schema changes |
+| `bun run db:seed` | wipe and refill sample data |
+| `bun run db:studio` | visual database browser |
+| `bun run db:reset` | delete everything and rebuild |
+
+**App** (`cd apps/mobile`)
+
+| Command | Does |
+|---|---|
+| `flutter run` | build and run on a device |
+| `flutter test` | run the tests |
+| `flutter analyze` | lint and type-check |
+| `flutter devices` | list available devices |
+
+---
+
+## Level branches
+
+Each `level-*` branch is a working checkpoint showing how the backend was built up. `main` has everything.
+
+| Branch | State |
+|---|---|
+| `level-1-hello` | one file, a few routes, no database |
+| `level-2-database` | Prisma + SQLite, loans CRUD, no auth |
+| `level-3-modules` | split into model/service/route, validation |
+| `level-4-auth` | passwords, JWT, guards, permissions |
+| `main` | everything, plus tests, the Flutter app, and these docs |
 
 ```bash
-git branch -a                 # see all levels
 git checkout level-1-hello    # jump to a level
-git checkout main             # come back to the full version
+git checkout main             # back to the full version
 ```
 
-Each level has its own database schema, and `.env`, `dev.db` and `src/generated/` are ignored by git — so they don't change when you switch. **After switching to any level from level 2 onward, run:**
+Each level has its own database schema, and `.env`, `dev.db` and `src/generated/` are ignored by git — so they don't follow a branch switch. **After switching to any level from 2 onward:**
 
 ```bash
+cd apps/api
 cp .env.example .env
 rm -rf src/generated dev.db
 bun install
 bun run db:migrate && bun run db:seed
 ```
 
-See [docs/07-exercises.md](docs/07-exercises.md) for what each level contains, and [docs/09-troubleshooting.md](docs/09-troubleshooting.md) if something looks broken.
+> Note: the level branches contain the API at the repo root (not under `apps/api/`), because they predate the app. Their own READMEs have the right paths.
+
+A good way to use them: check out `level-2-database`, try to split it into layers yourself, then `git diff level-3-modules` to compare with one solution. Yours being different isn't wrong.
+
+---
+
+## The idea behind the project
+
+The same rule appears on both sides of the network, and only one of them counts.
+
+The app hides the "Approve" button from non-admins. That's good manners — but it isn't security, because anyone can ignore the app and call the API directly. The API refuses with `403` regardless. [Mobile doc 1](docs/mobile/01-connecting.md) has a `curl` command that proves it in one line, and it's worth running.
+
+Learn that distinction and most security mistakes stop being tempting.

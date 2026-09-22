@@ -2,6 +2,8 @@
 
 Real errors and what they mean. Several of these came up while building this project.
 
+> **Where to run these commands:** every `bun` command in the backend docs runs from `apps/api/`. Do `cd apps/api` first.
+
 ## How to read an error
 
 Work from the **bottom** of a stack trace upward — the last lines are usually your code, the top is library internals. Find the first line mentioning a file in `src/` and start there.
@@ -18,7 +20,7 @@ You don't have a `.env` file, or it's missing a key.
 cp .env.example .env
 ```
 
-This message is deliberate. [src/lib/env.ts](../src/lib/env.ts) checks every variable at startup so you find out immediately rather than when the first user tries to log in.
+This message is deliberate. [src/lib/env.ts](../apps/api/src/lib/env.ts) checks every variable at startup so you find out immediately rather than when the first user tries to log in.
 
 ### `Cannot find module '../generated/prisma/client'`
 
@@ -86,7 +88,7 @@ grep -rhoE 'declare class Prisma[A-Za-z0-9]*' node_modules/@prisma/adapter-libsq
 
 ### `The datasource property 'url' is no longer supported in schema files`
 
-A Prisma 7 change. The connection URL now lives in [prisma.config.ts](../prisma.config.ts), not `schema.prisma`. Most tutorials online still show the old way — if you're following one, expect this.
+A Prisma 7 change. The connection URL now lives in [prisma.config.ts](../apps/api/prisma.config.ts), not `schema.prisma`. Most tutorials online still show the old way — if you're following one, expect this.
 
 ### `Could not find Prisma Schema`
 
@@ -98,7 +100,7 @@ Commands that wipe data (`db push --force-reset`, sometimes `migrate reset`) are
 
 ### `Unique constraint failed on the fields: (email)`
 
-You're inserting a duplicate of a `@unique` field. The schema is doing its job. Handle it in code as a `409` — see how `register` in [auth.service.ts](../src/modules/auth/auth.service.ts) checks first.
+You're inserting a duplicate of a `@unique` field. The schema is doing its job. Handle it in code as a `409` — see how `register` in [auth.service.ts](../apps/api/src/modules/auth/auth.service.ts) checks first.
 
 ### `Foreign key constraint failed`
 
@@ -145,7 +147,7 @@ Look at the `details` array in the response — it names the field. Common cause
 
 ### `500` with "Something went wrong on our side"
 
-That's a bug in the code. The real error is in your **terminal**, logged by the `onError` handler in [app.ts](../src/app.ts). The generic message is intentional — [doc 5](05-errors-validation.md) explains why.
+That's a bug in the code. The real error is in your **terminal**, logged by the `onError` handler in [app.ts](../apps/api/src/app.ts). The generic message is intentional — [doc 5](05-errors-validation.md) explains why.
 
 ### My request body seems to be ignored
 
@@ -157,7 +159,7 @@ Send the `Content-Type: application/json` header. Without it the body isn't pars
 
 ### Tests create junk in my real database
 
-They shouldn't — [tests/setup.ts](../tests/setup.ts) redirects them to `prisma/test.db`. If it's happening, check that [bunfig.toml](../bunfig.toml) has the `preload` line. The redirect must happen before anything imports `env.ts`.
+They shouldn't — [tests/setup.ts](../apps/api/tests/setup.ts) redirects them to `prisma/test.db`. If it's happening, check that [bunfig.toml](../apps/api/bunfig.toml) has the `preload` line. The redirect must happen before anything imports `env.ts`.
 
 (This is a real bug from building this project: the first test run put eleven "Test User" rows into `dev.db`. The fix was that setup file.)
 

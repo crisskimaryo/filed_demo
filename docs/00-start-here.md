@@ -1,5 +1,7 @@
 # 0. Start here
 
+> **Where to run these commands:** every `bun` command in the backend docs runs from `apps/api/`. Do `cd apps/api` first.
+
 If you've only written frontend code before, this page is for you. It assumes nothing.
 
 ## What is a backend?

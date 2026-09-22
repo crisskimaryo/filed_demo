@@ -41,11 +41,11 @@ Steps 3 and 4 are the interesting ones: **a bad request never reaches your handl
 
 ### 1–2. Matching the route
 
-[src/app.ts](../src/app.ts) groups everything under `/api`, and `loanRoute` adds `/loans`, so `POST /api/loans` matches the `.post("/")` handler in [loans.route.ts](../src/modules/loans/loans.route.ts).
+[src/app.ts](../apps/api/src/app.ts) groups everything under `/api`, and `loanRoute` adds `/loans`, so `POST /api/loans` matches the `.post("/")` handler in [loans.route.ts](../apps/api/src/modules/loans/loans.route.ts).
 
 ### 3. The login check
 
-`loanRoute` starts with `.use(authGuard)`, so this runs before any loan handler. From [auth.middleware.ts](../src/lib/auth.middleware.ts):
+`loanRoute` starts with `.use(authGuard)`, so this runs before any loan handler. From [auth.middleware.ts](../apps/api/src/lib/auth.middleware.ts):
 
 ```ts
 .derive({ as: "scoped" }, async ({ jwt, headers }) => {
@@ -116,7 +116,7 @@ No HTTP anywhere. Give it a user id and some data and it works — from a route,
 
 ### 7–8. Into the database
 
-Prisma turns that into SQL. You can *see* it: the dev server logs every query, because [prisma.ts](../src/lib/prisma.ts) enables `log: ["query"]` in development. In your terminal you'll find:
+Prisma turns that into SQL. You can *see* it: the dev server logs every query, because [prisma.ts](../apps/api/src/lib/prisma.ts) enables `log: ["query"]` in development. In your terminal you'll find:
 
 ```sql
 INSERT INTO `main`.`Loan` (`id`, `amount`, `status`, `purpose`, ...)
@@ -127,7 +127,7 @@ Watching that log while you click around Swagger is one of the fastest ways to u
 
 ## When it goes wrong
 
-Every error — thrown from a guard, a service, or the validator — lands in the single `.onError` handler in [app.ts](../src/app.ts):
+Every error — thrown from a guard, a service, or the validator — lands in the single `.onError` handler in [app.ts](../apps/api/src/app.ts):
 
 ```ts
 .onError(({ code, error, status }) => {
