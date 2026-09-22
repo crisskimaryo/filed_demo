@@ -3,8 +3,8 @@
   "version": "1.0.50",
   "scripts": {
     "setup": "prisma generate && prisma migrate deploy && bun run db:seed",
-    "dev": "bun run --watch src/index.ts",
-    "start": "bun run src/index.ts",
+    "dev": "node api.js && bun run --watch src/index.ts",
+    "start": "node api.js && bun run src/index.ts",
     "test": "bun test",
     "db:migrate": "prisma migrate dev",
     "db:seed": "bun run prisma/seed.ts",
