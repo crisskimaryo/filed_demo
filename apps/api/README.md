@@ -9,8 +9,7 @@ See the [workspace README](../../README.md) for running this together with the a
 ```bash
 bun install
 cp .env.example .env
-bun run db:migrate    # create the database file and tables
-bun run db:seed       # add sample users and loans
+bun run setup         # generate the client, create the tables, add sample data
 bun run dev
 ```
 
@@ -30,6 +29,7 @@ Password `password123` for all:
 
 | Command | Does |
 |---|---|
+| `bun run setup` | first-time setup: generate client, create tables, seed |
 | `bun run dev` | start the server, restart on save |
 | `bun test` | run the tests (separate database) |
 | `bun run typecheck` | check types without running |

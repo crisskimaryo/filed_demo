@@ -22,8 +22,7 @@ You need **two terminals**. The app does nothing without the API.
 cd apps/api
 bun install
 cp .env.example .env
-bun run db:migrate    # create the database file and tables
-bun run db:seed       # add sample users and loans
+bun run setup         # generate the client, create the tables, add sample data
 bun run dev
 ```
 
@@ -92,6 +91,7 @@ Start with the backend. The app half assumes you know what a token is.
 
 | Command | Does |
 |---|---|
+| `bun run setup` | first-time setup: generate client, create tables, seed |
 | `bun run dev` | start the server, restart on save |
 | `bun test` | run 26 tests (separate database) |
 | `bun run typecheck` | check types without running |
@@ -135,7 +135,8 @@ cd apps/api
 cp .env.example .env
 rm -rf src/generated dev.db
 bun install
-bun run db:migrate && bun run db:seed
+bun run db:migrate    # levels have their own migrations, so use migrate, not setup
+bun run db:seed
 ```
 
 > Note: the level branches contain the API at the repo root (not under `apps/api/`), because they predate the app. Their own READMEs have the right paths.

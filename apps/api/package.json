@@ -2,6 +2,7 @@
   "name": "zeni-bk",
   "version": "1.0.50",
   "scripts": {
+    "setup": "prisma generate && prisma migrate deploy && bun run db:seed",
     "dev": "bun run --watch src/index.ts",
     "start": "bun run src/index.ts",
     "test": "bun test",

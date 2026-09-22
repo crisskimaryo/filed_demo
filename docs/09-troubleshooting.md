@@ -24,13 +24,13 @@ This message is deliberate. [src/lib/env.ts](../apps/api/src/lib/env.ts) checks 
 
 ### `Cannot find module '../generated/prisma/client'`
 
-The Prisma client hasn't been generated. It's code created *from* your schema, and it isn't committed to git:
+The Prisma client hasn't been generated. It's code created *from* your schema, and it isn't committed to git — so a fresh clone never has it:
 
 ```bash
 bun run db:generate
 ```
 
-Needed after cloning the repo, and after any schema change (though `db:migrate` does it for you).
+You'll see this from `bun run db:seed`, `bun test` or `bun run typecheck` if you ran `db:migrate` on a fresh clone instead of `bun run setup`. On a clone the migration already exists, so Prisma only *applies* it and does not generate the client. `bun run setup` does both in the right order, which is why the README uses it.
 
 ### `src/generated/prisma exists and is not empty but doesn't look like a generated Prisma Client`
 
