@@ -150,9 +150,18 @@ Read these in order. They assume no backend experience.
 Each `level-*` branch is a working checkpoint. `main` has everything.
 
 ```bash
-git branch -a          # see all levels
+git branch -a                 # see all levels
 git checkout level-1-hello    # jump to a level
 git checkout main             # come back to the full version
 ```
 
-See [docs/07-exercises.md](docs/07-exercises.md) for what each level contains.
+Each level has its own database schema, and `.env`, `dev.db` and `src/generated/` are ignored by git — so they don't change when you switch. **After switching to any level from level 2 onward, run:**
+
+```bash
+cp .env.example .env
+rm -rf src/generated dev.db
+bun install
+bun run db:migrate && bun run db:seed
+```
+
+See [docs/07-exercises.md](docs/07-exercises.md) for what each level contains, and [docs/09-troubleshooting.md](docs/09-troubleshooting.md) if something looks broken.

@@ -30,6 +30,30 @@ bun run db:generate
 
 Needed after cloning the repo, and after any schema change (though `db:migrate` does it for you).
 
+### `src/generated/prisma exists and is not empty but doesn't look like a generated Prisma Client`
+
+Left-over files from a different schema — you'll hit this after switching between `level-*` branches, because each level has a different schema while `src/generated/` is ignored by git and so doesn't change with the branch.
+
+```bash
+rm -rf src/generated && bun run db:generate
+```
+
+It's generated build output, so deleting it is always safe.
+
+### I switched branches and everything broke
+
+Three things don't follow a branch switch, because git ignores them:
+
+```bash
+cp .env.example .env     # .env is ignored, so it can go missing
+rm -rf src/generated     # stale client from the other level's schema
+bun run db:generate
+rm -f dev.db             # the other level's tables
+bun run db:migrate && bun run db:seed
+```
+
+Each level has its own schema, so the database file has to be rebuilt too. (The file lives at the project root, not in `prisma/`.)
+
 ### `error: Cannot find module 'elysia'`
 
 Dependencies aren't installed: `bun install`.
